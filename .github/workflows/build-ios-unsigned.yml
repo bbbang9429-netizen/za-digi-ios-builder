@@ -49,6 +49,19 @@ jobs:
       - name: Install web dependencies
         working-directory: game
         run: npm ci
+        
+      - name: Find AJV usage
+        working-directory: game
+        run: |
+          echo "===== AJV IMPORTS ====="
+          grep -Rni --exclude-dir=node_modules \
+            -E "new Ajv|from ['\"]ajv|from ['\"]ajv/|require\\(['\"]ajv" \
+            . || true
+
+          echo "===== SCHEMA KEYWORD ====="
+          grep -RniF --exclude-dir=node_modules \
+            '"$schema"' . \
+            | head -100 || true
 
       - name: Install Capacitor iOS 7.4.2 for this build
         working-directory: game
