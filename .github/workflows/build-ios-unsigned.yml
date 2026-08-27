@@ -62,7 +62,16 @@ jobs:
           grep -RniF --exclude-dir=node_modules \
             '"$schema"' . \
             | head -100 || true
+            
+      - name: Show AJV source
+        working-directory: game
+        run: |
+          echo "===== DAILY SEED UTILS ====="
+          sed -n '1,100p' src/data/daily-seed/daily-seed-utils.ts
 
+          echo "===== GENERAL SCRIPT ====="
+          sed -n '1,90p' scripts/daily-seed/prompts/general.js
+          
       - name: Install Capacitor iOS 7.4.2 for this build
         working-directory: game
         run: npm install --no-save --package-lock=false @capacitor/ios@7.4.2
