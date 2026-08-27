@@ -38,6 +38,34 @@ jobs:
           rsync -a patch/ game/
           echo "Applied patch files:"
           find patch -type f | sort
+          
+      - name: Apply iOS AJV compatibility fix
+        working-directory: game
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          p = Path("src/data/daily-seed/daily-seed-utils.ts")
+          s = p.read_text()
+
+          old = """const ajv = new Ajv({
+            allErrors: true,
+          });"""
+
+          new = """const ajv = new Ajv({
+            allErrors: true,
+            strictSchema: false,
+          });"""
+
+          if old not in s:
+              raise SystemExit("ERROR: AJV block not found")
+
+          p.write_text(s.replace(old, new, 1))
+          print("iOS AJV compatibility fix applied")
+          PY
+
+          grep -A4 -B1 "const ajv = new Ajv" \
+            src/data/daily-seed/daily-seed-utils.ts          
 
       - name: Set up Node.js 24
         uses: actions/setup-node@v4
