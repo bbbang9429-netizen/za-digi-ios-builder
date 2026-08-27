@@ -137,6 +137,138 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 		</div>
 	</div>
+	<!-- ZA-DIGI iOS v15 DEBUG -->
+<script>
+(function () {
+  const logs = [];
+  let overlay = null;
+
+  function safe(value) {
+    try {
+      if (value instanceof Error) {
+        return value.name + ": " + value.message + "\n" + (value.stack || "");
+      }
+
+      if (typeof value === "object") {
+        return JSON.stringify(value, null, 2);
+      }
+
+      return String(value);
+    } catch (e) {
+      return String(value);
+    }
+  }
+
+  function ensureOverlay() {
+    if (overlay) return overlay;
+
+    overlay = document.createElement("div");
+    overlay.id = "za-ios-debug-overlay";
+
+    Object.assign(overlay.style, {
+      position: "fixed",
+      left: "0",
+      top: "0",
+      width: "100vw",
+      height: "100vh",
+      zIndex: "2147483647",
+      background: "rgba(0,0,0,0.94)",
+      color: "#ffffff",
+      fontFamily: "monospace",
+      fontSize: "12px",
+      lineHeight: "1.35",
+      whiteSpace: "pre-wrap",
+      overflow: "auto",
+      WebkitOverflowScrolling: "touch",
+      boxSizing: "border-box",
+      padding: "20px"
+    });
+
+    document.documentElement.appendChild(overlay);
+    return overlay;
+  }
+
+  function show(title, detail) {
+    const text =
+      "\n==============================\n" +
+      "ZA-DIGI iOS v15 DEBUG\n" +
+      "==============================\n" +
+      title +
+      "\n\n" +
+      safe(detail) +
+      "\n";
+
+    logs.push(text);
+
+    const el = ensureOverlay();
+    el.textContent = logs.join("\n");
+  }
+
+  window.__ZA_IOS_DEBUG__ = {
+    show: show,
+    logs: logs
+  };
+
+  window.addEventListener("error", function (event) {
+    if (event.error) {
+      show(
+        "JAVASCRIPT ERROR",
+        "Message: " + event.message +
+        "\nFile: " + event.filename +
+        "\nLine: " + event.lineno +
+        ":" + event.colno +
+        "\n\n" + safe(event.error)
+      );
+      return;
+    }
+
+    const target = event.target;
+
+    if (target && target !== window) {
+      show(
+        "RESOURCE LOAD ERROR",
+        "Tag: " + (target.tagName || "unknown") +
+        "\nURL: " +
+        (target.src || target.href || target.currentSrc || "unknown")
+      );
+    }
+  }, true);
+
+  window.addEventListener("unhandledrejection", function (event) {
+    show("UNHANDLED PROMISE REJECTION", event.reason);
+  });
+
+  document.addEventListener("DOMContentLoaded", function () {
+    console.log("[ZA iOS DEBUG] DOMContentLoaded");
+  });
+
+  window.addEventListener("load", function () {
+    console.log("[ZA iOS DEBUG] window.load");
+
+    setTimeout(function () {
+      const app = document.getElementById("app");
+
+      if (!app) {
+        show("STARTUP TIMEOUT", "#app element does not exist.");
+        return;
+      }
+
+      const canvas = app.querySelector("canvas");
+
+      if (!canvas && app.children.length === 0) {
+        show(
+          "STARTUP TIMEOUT",
+          "10 seconds passed but the game did not create any content inside #app.\n\n" +
+          "No synchronous JavaScript error was captured.\n" +
+          "The failure is probably occurring during asynchronous initialization."
+        );
+      }
+    }, 10000);
+  });
+
+  console.log("[ZA iOS DEBUG] error catcher installed");
+})();
+</script>
 	<script type="module" src="./src/main.ts"></script>
 	<script src="./src/touch-controls.ts" type="module"></script>
 </body>
