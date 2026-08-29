@@ -39,15 +39,15 @@ jobs:
           echo "Applied patch files:"
           find patch -type f | sort
 
-      - name: Apply iOS v17.1 PRSV and memory fixes
+      - name: Apply iOS v17.2 PRSV and memory fixes
         working-directory: game
-        run: python3 ../PATCH_IOS_V17_1.py
+        run: python3 ../PATCH_IOS_V17_2.py
 
       - name: Verify iOS PRSV picker patch
         working-directory: game
         run: |
           echo "===== GAME DATA IMPORT SECTION ====="
-          sed -n '1465,1630p' src/system/game-data.ts
+          sed -n '1465,1635p' src/system/game-data.ts
           echo "===== VERIFY PRSV PICKER ====="
           grep -n -E 'saveFile.accept|appendChild\(saveFile\)|saveFile.click|FileReader|readAsText|style.opacity' \
             src/system/game-data.ts
@@ -162,15 +162,15 @@ jobs:
           cp -R "$APP_PATH" ipa-out/Payload/
           (
             cd ipa-out
-            zip -qry ../ZA-DIGI-Rouge-v17.1-unsigned.ipa Payload
+            zip -qry ../ZA-DIGI-Rouge-v17.2-unsigned.ipa Payload
           )
-          ls -lh ZA-DIGI-Rouge-v17.1-unsigned.ipa
+          ls -lh ZA-DIGI-Rouge-v17.2-unsigned.ipa
 
       - name: Upload unsigned IPA
         uses: actions/upload-artifact@v4
         with:
-          name: ZA-DIGI-Rouge-v17.1-iOS-unsigned
-          path: game/ZA-DIGI-Rouge-v17.1-unsigned.ipa
+          name: ZA-DIGI-Rouge-v17.2-iOS-unsigned
+          path: game/ZA-DIGI-Rouge-v17.2-unsigned.ipa
           compression-level: 0
           retention-days: 7
           if-no-files-found: error
