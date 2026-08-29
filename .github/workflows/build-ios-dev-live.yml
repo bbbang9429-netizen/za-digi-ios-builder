@@ -105,7 +105,7 @@ jobs:
       - name: Install iOS native dependencies
         working-directory: game
         run: |
-          npm install --no-save --package-lock=false \
+          npm install --save-exact --package-lock=false \
             @capacitor/ios@7.4.2 \
             @capawesome/capacitor-file-picker@7.2.0
 
