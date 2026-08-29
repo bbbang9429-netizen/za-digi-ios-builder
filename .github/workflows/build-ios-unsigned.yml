@@ -49,6 +49,10 @@ jobs:
         working-directory: game
         run: python3 ../PATCH_IOS_V17_4_1.py
 
+      - name: Apply iOS v17.5 final PRSV import fix
+        working-directory: game
+        run: python3 ../PATCH_IOS_V17_5.py
+
       - name: Apply iOS AJV compatibility fix
         working-directory: game
         run: |
@@ -81,18 +85,23 @@ jobs:
       - name: Install iOS native dependencies
         working-directory: game
         run: |
-          npm install --no-save --package-lock=false \
+          npm install --save-exact --package-lock=false \
             @capacitor/ios@7.4.2 \
             @capawesome/capacitor-file-picker@7.2.0
           npm ls @capacitor/ios @capawesome/capacitor-file-picker --depth=0
           test -d node_modules/@capacitor/ios
           test -d node_modules/@capawesome/capacitor-file-picker
 
-      - name: Verify v17.4.1 PRSV source
+      - name: Verify v17.5 PRSV source
         working-directory: game
         run: |
           grep -n -E 'import \{ FilePicker \}|FilePicker.pickFiles|readData: true|processSelectedFile\(selectedFile\)' \
             src/system/game-data.ts
+          grep -n 'ZA iOS v17.5: keep Manage Data cursor state' src/ui/handlers/menu-ui-handler.ts
+          if grep -q '\[ZA-DIGI DEV\]' src/system/game-data.ts; then
+            echo "ERROR: DEV diagnostic code remains"
+            exit 1
+          fi
           if grep -q 'void import("@capawesome/capacitor-file-picker")' src/system/game-data.ts; then
             echo "ERROR: old dynamic import remains"
             exit 1
@@ -181,15 +190,15 @@ jobs:
           cp -R "$APP_PATH" ipa-out/Payload/
           (
             cd ipa-out
-            zip -qry ../ZA-DIGI-Rouge-v17.4.1-unsigned.ipa Payload
+            zip -qry ../ZA-DIGI-Rouge-v17.5-unsigned.ipa Payload
           )
-          ls -lh ZA-DIGI-Rouge-v17.4.1-unsigned.ipa
+          ls -lh ZA-DIGI-Rouge-v17.5-unsigned.ipa
 
       - name: Upload unsigned IPA
         uses: actions/upload-artifact@v4
         with:
-          name: ZA-DIGI-Rouge-v17.4.1-iOS-unsigned
-          path: game/ZA-DIGI-Rouge-v17.4.1-unsigned.ipa
+          name: ZA-DIGI-Rouge-v17.5-iOS-unsigned
+          path: game/ZA-DIGI-Rouge-v17.5-unsigned.ipa
           compression-level: 0
           retention-days: 7
           if-no-files-found: error

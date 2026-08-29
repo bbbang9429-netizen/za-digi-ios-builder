@@ -49,6 +49,10 @@ jobs:
         working-directory: game
         run: python3 ../PATCH_IOS_V17_4_1.py
 
+      - name: Apply iOS v17.5 final PRSV import fix
+        working-directory: game
+        run: python3 ../PATCH_IOS_V17_5.py
+
       - name: Apply iOS AJV compatibility fix
         working-directory: game
         run: |
