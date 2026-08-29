@@ -39,17 +39,17 @@ jobs:
           echo "Applied patch files:"
           find patch -type f | sort
 
-      - name: Apply iOS v17 PRSV and memory fixes
+      - name: Apply iOS v17.1 PRSV and memory fixes
         working-directory: game
-        run: python3 ../PATCH_IOS_V17.py
+        run: python3 ../PATCH_IOS_V17_1.py
 
       - name: Verify iOS PRSV picker patch
         working-directory: game
         run: |
           echo "===== GAME DATA IMPORT SECTION ====="
           sed -n '1465,1630p' src/system/game-data.ts
-          echo "===== VERIFY DOM-ATTACHED FILE INPUT ====="
-          grep -n -E 'saveFile.accept|appendChild\(saveFile\)|saveFile.click|readAsText|style.opacity' \
+          echo "===== VERIFY PRSV PICKER ====="
+          grep -n -E 'saveFile.accept|appendChild\(saveFile\)|saveFile.click|FileReader|readAsText|style.opacity' \
             src/system/game-data.ts
 
       - name: Apply iOS AJV compatibility fix
@@ -59,22 +59,16 @@ jobs:
           from pathlib import Path
           p = Path("src/data/daily-seed/daily-seed-utils.ts")
           s = p.read_text()
-          old = """const ajv = new Ajv({
-            allErrors: true,
-          });"""
-          new = """const ajv = new Ajv({
-            allErrors: true,
-            strictSchema: false,
-          });"""
+          old = "const ajv = new Ajv({\n  allErrors: true,\n});"
           if "strictSchema: false" in s:
               print("AJV compatibility fix already present")
           elif old in s:
+              new = "const ajv = new Ajv({\n  allErrors: true,\n  strictSchema: false,\n});"
               p.write_text(s.replace(old, new, 1))
               print("iOS AJV compatibility fix applied")
           else:
               raise SystemExit("ERROR: AJV block not found")
           PY
-          grep -A4 -B1 "const ajv = new Ajv" src/data/daily-seed/daily-seed-utils.ts
 
       - name: Set up Node.js 24
         uses: actions/setup-node@v4
@@ -136,8 +130,7 @@ jobs:
 
       - name: Resolve Swift packages
         working-directory: game
-        run: |
-          xcodebuild -project ios/App/App.xcodeproj -scheme App -resolvePackageDependencies
+        run: xcodebuild -project ios/App/App.xcodeproj -scheme App -resolvePackageDependencies
 
       - name: Build unsigned iPhone app
         working-directory: game
@@ -169,15 +162,15 @@ jobs:
           cp -R "$APP_PATH" ipa-out/Payload/
           (
             cd ipa-out
-            zip -qry ../ZA-DIGI-Rouge-v17-unsigned.ipa Payload
+            zip -qry ../ZA-DIGI-Rouge-v17.1-unsigned.ipa Payload
           )
-          ls -lh ZA-DIGI-Rouge-v17-unsigned.ipa
+          ls -lh ZA-DIGI-Rouge-v17.1-unsigned.ipa
 
       - name: Upload unsigned IPA
         uses: actions/upload-artifact@v4
         with:
-          name: ZA-DIGI-Rouge-v17-iOS-unsigned
-          path: game/ZA-DIGI-Rouge-v17-unsigned.ipa
+          name: ZA-DIGI-Rouge-v17.1-iOS-unsigned
+          path: game/ZA-DIGI-Rouge-v17.1-unsigned.ipa
           compression-level: 0
           retention-days: 7
           if-no-files-found: error
