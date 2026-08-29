@@ -43,6 +43,21 @@ jobs:
         working-directory: game
         run: python3 ../PATCH_IOS_V16.py
 
+      - name: Inspect PRSV import implementation
+        working-directory: game
+        run: |
+          echo "===== PRSV REFERENCES ====="
+          grep -Rni --exclude-dir=node_modules \
+            -E '\.prsv|FileReader|showOpenFilePicker|createElement\(.*input|type.*file|accept.*prsv|import.*data|import.*session' \
+            src \
+            | head -300 || true
+
+          echo "===== FILE INPUT REFERENCES ====="
+          grep -Rni --exclude-dir=node_modules \
+            -E 'input\.files|files\[0\]|readAsText|readAsArrayBuffer|FileReader' \
+            src \
+            | head -200 || true
+
       - name: Apply iOS AJV compatibility fix
         working-directory: game
         run: |
@@ -176,15 +191,15 @@ jobs:
           cp -R "$APP_PATH" ipa-out/Payload/
           (
             cd ipa-out
-            zip -qry ../ZA-DIGI-Rouge-v16-unsigned.ipa Payload
+            zip -qry ../ZA-DIGI-Rouge-v16-debug-unsigned.ipa Payload
           )
-          ls -lh ZA-DIGI-Rouge-v16-unsigned.ipa
+          ls -lh ZA-DIGI-Rouge-v16-debug-unsigned.ipa
 
       - name: Upload unsigned IPA
         uses: actions/upload-artifact@v4
         with:
-          name: ZA-DIGI-Rouge-v16-iOS-unsigned
-          path: game/ZA-DIGI-Rouge-v16-unsigned.ipa
+          name: ZA-DIGI-Rouge-v16-debug-iOS-unsigned
+          path: game/ZA-DIGI-Rouge-v16-debug-unsigned.ipa
           compression-level: 0
           retention-days: 7
           if-no-files-found: error
