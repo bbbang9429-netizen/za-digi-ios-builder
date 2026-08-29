@@ -39,18 +39,13 @@ jobs:
           echo "Applied patch files:"
           find patch -type f | sort
 
-      - name: Apply iOS v17.2 PRSV and memory fixes
+      - name: Apply iOS v17.2 prerequisite picker patch
         working-directory: game
         run: python3 ../PATCH_IOS_V17_2.py
 
-      - name: Verify iOS PRSV picker patch
+      - name: Apply iOS v17.3 native PRSV picker
         working-directory: game
-        run: |
-          echo "===== GAME DATA IMPORT SECTION ====="
-          sed -n '1465,1635p' src/system/game-data.ts
-          echo "===== VERIFY PRSV PICKER ====="
-          grep -n -E 'saveFile.accept|appendChild\(saveFile\)|saveFile.click|FileReader|readAsText|style.opacity' \
-            src/system/game-data.ts
+        run: python3 ../PATCH_IOS_V17_3.py
 
       - name: Apply iOS AJV compatibility fix
         working-directory: game
@@ -81,9 +76,17 @@ jobs:
         working-directory: game
         run: npm ci
 
-      - name: Install Capacitor iOS 7.4.2 for this build
+      - name: Install iOS native dependencies for this build
         working-directory: game
-        run: npm install --no-save --package-lock=false @capacitor/ios@7.4.2
+        run: |
+          npm install --no-save --package-lock=false @capacitor/ios@7.4.2
+          npm install --no-save --package-lock=false @capawesome/capacitor-file-picker@7.2.0
+
+      - name: Verify native PRSV source
+        working-directory: game
+        run: |
+          grep -n -E 'capawesome/capacitor-file-picker|FilePicker.pickFiles|readData: true|endsWith\("\.prsv"\)|processSelectedFile' \
+            src/system/game-data.ts
 
       - name: Build offline web app
         working-directory: game
@@ -106,6 +109,12 @@ jobs:
           rm -rf ios
           npx cap add ios --packagemanager SPM
           npx cap sync ios
+
+      - name: Verify FilePicker native plugin
+        working-directory: game
+        run: |
+          npx cap ls ios || true
+          grep -Rni "FilePicker\|Capawesome" ios/App 2>/dev/null | head -100 || true
 
       - name: Configure iPhone landscape/fullscreen defaults
         working-directory: game
@@ -162,15 +171,15 @@ jobs:
           cp -R "$APP_PATH" ipa-out/Payload/
           (
             cd ipa-out
-            zip -qry ../ZA-DIGI-Rouge-v17.2-unsigned.ipa Payload
+            zip -qry ../ZA-DIGI-Rouge-v17.3-unsigned.ipa Payload
           )
-          ls -lh ZA-DIGI-Rouge-v17.2-unsigned.ipa
+          ls -lh ZA-DIGI-Rouge-v17.3-unsigned.ipa
 
       - name: Upload unsigned IPA
         uses: actions/upload-artifact@v4
         with:
-          name: ZA-DIGI-Rouge-v17.2-iOS-unsigned
-          path: game/ZA-DIGI-Rouge-v17.2-unsigned.ipa
+          name: ZA-DIGI-Rouge-v17.3-iOS-unsigned
+          path: game/ZA-DIGI-Rouge-v17.3-unsigned.ipa
           compression-level: 0
           retention-days: 7
           if-no-files-found: error
