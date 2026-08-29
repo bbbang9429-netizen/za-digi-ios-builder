@@ -36,8 +36,6 @@ jobs:
       - name: Apply v14 offline/custom patches
         run: |
           rsync -a patch/ game/
-          echo "Applied patch files:"
-          find patch -type f | sort
 
       - name: Apply iOS v17.2 prerequisite picker patch
         working-directory: game
@@ -47,9 +45,9 @@ jobs:
         working-directory: game
         run: python3 ../PATCH_IOS_V17_3.py
 
-      - name: Apply iOS v17.4 direct native picker fix
+      - name: Apply iOS v17.4.1 direct native picker fix
         working-directory: game
-        run: python3 ../PATCH_IOS_V17_4.py
+        run: python3 ../PATCH_IOS_V17_4_1.py
 
       - name: Apply iOS AJV compatibility fix
         working-directory: game
@@ -90,7 +88,7 @@ jobs:
           test -d node_modules/@capacitor/ios
           test -d node_modules/@capawesome/capacitor-file-picker
 
-      - name: Verify v17.4 PRSV source
+      - name: Verify v17.4.1 PRSV source
         working-directory: game
         run: |
           grep -n -E 'import \{ FilePicker \}|FilePicker.pickFiles|readData: true|processSelectedFile\(selectedFile\)' \
@@ -183,15 +181,15 @@ jobs:
           cp -R "$APP_PATH" ipa-out/Payload/
           (
             cd ipa-out
-            zip -qry ../ZA-DIGI-Rouge-v17.4-unsigned.ipa Payload
+            zip -qry ../ZA-DIGI-Rouge-v17.4.1-unsigned.ipa Payload
           )
-          ls -lh ZA-DIGI-Rouge-v17.4-unsigned.ipa
+          ls -lh ZA-DIGI-Rouge-v17.4.1-unsigned.ipa
 
       - name: Upload unsigned IPA
         uses: actions/upload-artifact@v4
         with:
-          name: ZA-DIGI-Rouge-v17.4-iOS-unsigned
-          path: game/ZA-DIGI-Rouge-v17.4-unsigned.ipa
+          name: ZA-DIGI-Rouge-v17.4.1-iOS-unsigned
+          path: game/ZA-DIGI-Rouge-v17.4.1-unsigned.ipa
           compression-level: 0
           retention-days: 7
           if-no-files-found: error
