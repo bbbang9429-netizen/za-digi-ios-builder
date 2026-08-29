@@ -39,52 +39,42 @@ jobs:
           echo "Applied patch files:"
           find patch -type f | sort
 
-      - name: Apply iOS v16 fixes
+      - name: Apply iOS v17 PRSV and memory fixes
         working-directory: game
-        run: python3 ../PATCH_IOS_V16.py
+        run: python3 ../PATCH_IOS_V17.py
 
-      - name: Inspect PRSV import implementation
+      - name: Verify iOS PRSV picker patch
         working-directory: game
         run: |
-          echo "===== PRSV REFERENCES ====="
-          grep -Rni --exclude-dir=node_modules \
-            -E '\.prsv|FileReader|showOpenFilePicker|createElement\(.*input|type.*file|accept.*prsv|import.*data|import.*session' \
-            src \
-            | head -300 || true
-
-          echo "===== FILE INPUT REFERENCES ====="
-          grep -Rni --exclude-dir=node_modules \
-            -E 'input\.files|files\[0\]|readAsText|readAsArrayBuffer|FileReader' \
-            src \
-            | head -200 || true
+          echo "===== GAME DATA IMPORT SECTION ====="
+          sed -n '1465,1630p' src/system/game-data.ts
+          echo "===== VERIFY DOM-ATTACHED FILE INPUT ====="
+          grep -n -E 'saveFile.accept|appendChild\(saveFile\)|saveFile.click|readAsText|style.opacity' \
+            src/system/game-data.ts
 
       - name: Apply iOS AJV compatibility fix
         working-directory: game
         run: |
           python3 - <<'PY'
           from pathlib import Path
-
           p = Path("src/data/daily-seed/daily-seed-utils.ts")
           s = p.read_text()
-
           old = """const ajv = new Ajv({
             allErrors: true,
           });"""
-
           new = """const ajv = new Ajv({
             allErrors: true,
             strictSchema: false,
           });"""
-
-          if old not in s:
+          if "strictSchema: false" in s:
+              print("AJV compatibility fix already present")
+          elif old in s:
+              p.write_text(s.replace(old, new, 1))
+              print("iOS AJV compatibility fix applied")
+          else:
               raise SystemExit("ERROR: AJV block not found")
-
-          p.write_text(s.replace(old, new, 1))
-          print("iOS AJV compatibility fix applied")
           PY
-
-          grep -A4 -B1 "const ajv = new Ajv" \
-            src/data/daily-seed/daily-seed-utils.ts
+          grep -A4 -B1 "const ajv = new Ajv" src/data/daily-seed/daily-seed-utils.ts
 
       - name: Set up Node.js 24
         uses: actions/setup-node@v4
@@ -114,7 +104,6 @@ jobs:
           test -d dist/fonts
           test -d dist/battle-anims
           test -f dist/index.html
-          echo "dist size:"
           du -sh dist
 
       - name: Add Capacitor iOS platform using Swift Package Manager
@@ -129,34 +118,26 @@ jobs:
         run: |
           PLIST="ios/App/App/Info.plist"
           test -f "$PLIST"
-
           /usr/libexec/PlistBuddy -c "Delete :UISupportedInterfaceOrientations" "$PLIST" 2>/dev/null || true
           /usr/libexec/PlistBuddy -c "Add :UISupportedInterfaceOrientations array" "$PLIST"
           /usr/libexec/PlistBuddy -c "Add :UISupportedInterfaceOrientations:0 string UIInterfaceOrientationLandscapeLeft" "$PLIST"
           /usr/libexec/PlistBuddy -c "Add :UISupportedInterfaceOrientations:1 string UIInterfaceOrientationLandscapeRight" "$PLIST"
-
           /usr/libexec/PlistBuddy -c "Delete :UISupportedInterfaceOrientations~ipad" "$PLIST" 2>/dev/null || true
           /usr/libexec/PlistBuddy -c "Add :UISupportedInterfaceOrientations~ipad array" "$PLIST"
           /usr/libexec/PlistBuddy -c "Add :UISupportedInterfaceOrientations~ipad:0 string UIInterfaceOrientationLandscapeLeft" "$PLIST"
           /usr/libexec/PlistBuddy -c "Add :UISupportedInterfaceOrientations~ipad:1 string UIInterfaceOrientationLandscapeRight" "$PLIST"
-
           /usr/libexec/PlistBuddy -c "Delete :UIRequiresFullScreen" "$PLIST" 2>/dev/null || true
           /usr/libexec/PlistBuddy -c "Add :UIRequiresFullScreen bool true" "$PLIST"
-
           /usr/libexec/PlistBuddy -c "Delete :UIViewControllerBasedStatusBarAppearance" "$PLIST" 2>/dev/null || true
           /usr/libexec/PlistBuddy -c "Add :UIViewControllerBasedStatusBarAppearance bool false" "$PLIST"
           /usr/libexec/PlistBuddy -c "Delete :UIStatusBarHidden" "$PLIST" 2>/dev/null || true
           /usr/libexec/PlistBuddy -c "Add :UIStatusBarHidden bool true" "$PLIST"
-
           plutil -lint "$PLIST"
 
       - name: Resolve Swift packages
         working-directory: game
         run: |
-          xcodebuild \
-            -project ios/App/App.xcodeproj \
-            -scheme App \
-            -resolvePackageDependencies
+          xcodebuild -project ios/App/App.xcodeproj -scheme App -resolvePackageDependencies
 
       - name: Build unsigned iPhone app
         working-directory: game
@@ -183,23 +164,20 @@ jobs:
             echo "ERROR: .app bundle not found"
             exit 1
           fi
-          echo "App bundle: $APP_PATH"
-          du -sh "$APP_PATH"
-
           rm -rf ipa-out
           mkdir -p ipa-out/Payload
           cp -R "$APP_PATH" ipa-out/Payload/
           (
             cd ipa-out
-            zip -qry ../ZA-DIGI-Rouge-v16-debug-unsigned.ipa Payload
+            zip -qry ../ZA-DIGI-Rouge-v17-unsigned.ipa Payload
           )
-          ls -lh ZA-DIGI-Rouge-v16-debug-unsigned.ipa
+          ls -lh ZA-DIGI-Rouge-v17-unsigned.ipa
 
       - name: Upload unsigned IPA
         uses: actions/upload-artifact@v4
         with:
-          name: ZA-DIGI-Rouge-v16-debug-iOS-unsigned
-          path: game/ZA-DIGI-Rouge-v16-debug-unsigned.ipa
+          name: ZA-DIGI-Rouge-v17-iOS-unsigned
+          path: game/ZA-DIGI-Rouge-v17-unsigned.ipa
           compression-level: 0
           retention-days: 7
           if-no-files-found: error
